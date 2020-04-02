@@ -1,0 +1,15 @@
+{
+	"name": "rollup-plugin-dillx",
+	"version": "1.0.0",
+	"description": "",
+	"main": "./dist/rollup-plugin-dillx.js",
+	"scripts": {
+		"build": "rollup --c"
+	},
+	"keywords": [],
+	"author": "Daniel Judd",
+	"license": "ISC",
+	"devDependencies": {
+		"rollup": "^2.3.2"
+	}
+}
