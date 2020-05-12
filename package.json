@@ -1,15 +1,17 @@
 {
 	"name": "rollup-plugin-dillx",
-	"version": "1.0.0",
+	"version": "2.0.0",
 	"description": "",
 	"main": "./dist/rollup-plugin-dillx.js",
 	"scripts": {
-		"build": "rollup --c"
+		"build": "rollup --config"
 	},
 	"keywords": [],
 	"author": "Daniel Judd",
 	"license": "ISC",
 	"devDependencies": {
-		"rollup": "^2.3.2"
+		"@rollup/plugin-node-resolve": "^7.1.1",
+		"rollup": "^2.3.2",
+		"sage": "file:../../Sage"
 	}
 }

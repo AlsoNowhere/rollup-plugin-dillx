@@ -1,8 +1,6 @@
 
 export const resolveLingeringDillXReferences = content => {
 
-    // console.log("Linger: ", content);
-
     let output = '';
     let parenthesis = 0;
     let startParenthesis = null;
@@ -16,6 +14,13 @@ export const resolveLingeringDillXReferences = content => {
         }
         if (content.substr(i,6) === "dillx(") {
             i += 6;
+            output += "[";
+            startParenthesis = parenthesis;
+            parenthesis++;
+            continue;
+        }
+        if (content.substr(i,14) === "dillx.isolate(") {
+            i += 14;
             output += "[";
             startParenthesis = parenthesis;
             parenthesis++;

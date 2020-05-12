@@ -8,6 +8,7 @@ export const resolveComponents = content => {
     let brace = 0;
     let brackets = 0;
     let template = null;
+    let isolated = false;
     let insideReturn = false;
     let returnBrackets = null;
 
@@ -49,6 +50,16 @@ export const resolveComponents = content => {
             output += methods;
             continue;
         }
+        if (component !== null && brace > component && content.substr(i,21) === "return dillx.isolate(") {
+            i += 20;
+            returnBrackets = brackets;
+            brackets++;
+            insideReturn = true;
+            isolated = true;
+            template = `dillx(`;
+            output += methods;
+            continue;
+        }
         if (insideReturn) {
             template += x;
             if (returnBrackets === brackets) {
@@ -64,8 +75,9 @@ export const resolveComponents = content => {
             const inlineComponentName = componentName.replace(/[A-Z]/g,x=>`-${x.toLowerCase()}`).substr(1) + "-c";
             
             output += `
-${componentName}.component = new dillx.Component("${inlineComponentName}",${template});`;
+${componentName}.component = new dillx.Component("${inlineComponentName}",${template},${isolated});`;
             template = null;
+            isolated = false;
             continue;
         }
         output += x;
