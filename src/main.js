@@ -1,14 +1,19 @@
 
-import { clearComments } from "./support/clear-comments";
-import { resolveContent } from "./support/resolve-content";
-import { resolveComponents } from "./support/resolve-components";
-import { resolveLingeringDillXReferences } from "./support/resolve-lingering-dillx-references";
+// import { clearComments } from "./support/clear-comments";
+// import { resolveContent } from "./support/resolve-content";
+// import { resolveComponents } from "./support/resolve-components";
+// import { resolveLingeringDillXReferences } from "./support/resolve-lingering-dillx-references";
+
+import { clearComments } from "./services/clear-comments.service";
+import { resolveJSX } from "./services/resolve-jsx.service";
+import { resolveComponents } from "./services/resolve-components.service";
 
 export const dillx = () => {
     return {
         name: "rollup-plugin-dillx",
         transform(content,name){
 
+            /* -- Do not parse  */
             if (name.split("\\").pop() === "dillx.js") {
                 return content;
             }
@@ -18,12 +23,13 @@ export const dillx = () => {
     are removed.
 */
             content = clearComments(content);
-
+            // console.log("\nFRANCOPHILE 1: ", content);
 
 /* -- Parse the JSX --
     All instances of parenthesis are scanned through and parsed if they are JSX.
 */
-            content = resolveContent(content);
+            content = resolveJSX(content);
+            // console.log("\nFRANCOPHILE 2: ", content);
 
 /* -- Change the syntax --
     Components written with a return statement won't work and so this function
@@ -33,6 +39,7 @@ export const dillx = () => {
     can handle.
 */
             content = resolveComponents(content);
+            // console.log("\nFRANCOPHILE 3: ", content);
 
 /* -- Clean up --
     Components need to import dillx (npm -> import dillx from "diilx";)
@@ -45,11 +52,11 @@ export const dillx = () => {
     not used VSCode will grey it out.
     dillx() is not actually used and is not a Function and so it should be removed.
 */
-            content = resolveLingeringDillXReferences(content);
+            // content = resolveLingeringDillXReferences(content);
 
-            // console.log("OUtogbi: ", content);
+            // console.log("\nFRANCOPHILE: ", content);
 
-            return content
+            return content;
         }
     };
 }

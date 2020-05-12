@@ -1,4 +1,7 @@
 
+import { buildAttributes } from "./build-attributes";
+import { resolveTextContent } from "./resolve-text-content";
+
 /* Must conform to a '< then >' pattern. */
 const recurseArrowCheck = str => {
     if (str.indexOf("<") === -1) {
@@ -10,120 +13,12 @@ const recurseArrowCheck = str => {
     return recurseArrowCheck(str.substring(str.indexOf(">")+1));
 }
 
-const buildAttributes = (str,methods) => {
-
-    const l = str.length;
-
-    let insideSpeech = false;
-    let insideBraces = null;
-    let insideBraceNumber = null;
-    let braces = 0;
-    let newStr = "";
-
-    for (let i = 0 ; i < l ; i++) {
-        const x = str.substr(i,1);
-        if (x === '"') {
-            insideSpeech = !insideSpeech;
-            if (insideBraces === null) {
-                newStr += x;
-            }
-            continue;
-        }
-        if (insideSpeech) {
-            if (insideBraces === null) {
-                newStr += x;
-            }
-            continue;
-        }
-        if (x === "{") {
-            braces++;
-        }
-        if (x === "}") {
-            braces--;
-        }
-        if (x === "{" && insideBraces === null) {
-            insideBraces = i;
-            insideBraceNumber = braces;
-            continue;
-        }
-        if (x === "}" && insideBraces !== null && braces === insideBraceNumber - 1) {
-            const templateName = "template$_" + methods._index++;
-            let value = str.substring(insideBraces,i+1)
-                .replace(/"/g,"'");
-            value = value.substring(1,value.length-1);
-
-            if (value.indexOf("{") !== -1) {
-                console.log("String: ", value);
-                if (
-                    value.substring(0,value.indexOf("{")).match(/function\s*[^\s]*\(.*\)\s*/)===null
-                    && value.substring(0,value.indexOf("{")).match(/\(.*\)\s*\[!11\]\s*/)===null
-                ) {
-                    value = `function(){return ${value}}`;
-                }
-            }
-            else {
-                if (
-                    value.match(/function\s*[^\s]*\(.*\)\s*/)===null
-                    && value.match(/\(.*\)\s*\[!11\]\s*/)===null
-                ) {
-                    value = `function(){return ${value}}`;
-                }
-            }
-
-            methods[templateName] = value;
-            insideBraces = null;
-            insideBraceNumber = null;
-            newStr += `"${templateName}"`;
-            continue;
-        }
-        if (insideBraces !== null) {
-            continue;
-        }
-        newStr += x;
-    }
-
-// /* Anything inside a tag that matches the attribute format is added to the attribute list. */
-    let _attributes = [];
-    newStr
-        // .replace(/s[[]()a-z-]+="[^"]+"/g,x=>_attributes.push(x))
-        // .replace(/s[[]()a-z-]+/g,x=>_attributes.push(x));
-
-        .replace(/\s[a-z-]+="[^"]+"/g,x=>_attributes.push(x))
-        .replace(/\s[$a-z-]+/g,x=>_attributes.push(x));
-
-    _attributes = _attributes.map(x=>{
-        const split = x.substr(1).split("=");
-        let name = split[0];
-        if (name.substr(0,1) === "$") {
-            name = name.substr(1) + "---";
-        }
-        const attribute = {
-            name: `"${ name}"`
-        };
-        // console.log("Split: ", split);
-        if (split[1]) {
-            attribute.value = split[1];
-        }
-        return attribute;
-    });
-
-// /* Build the attribute literal string. */
-    const attributes = _attributes.map(x=>`{name:${x.name}${x.value?`,value:${x.value}`:""}}`).join(",");
-
-    return attributes;
-}
-
 export const resolveJSX = str => {
 
 /* If the content does not contain any angle brackets then there is nothing to parse so return the whole thing. */
     if (str.indexOf("<") === -1) {
         return str;
     }
-
-/* Any angle brackets found must be in the format <> <> not < < > for example. If this is not true then the code is not valid for parsing and will be returned as is. */
-    // if (!recurseArrowCheck(str)) {
-    //     return str;
-    // }
 
     const methods = {
         _index: 0
@@ -133,19 +28,16 @@ export const resolveJSX = str => {
 
 /* Remove line breaks and carriage returns. (Where we're going, we don't need 'em!) */
         .replace(/[\r\n]+/g,"")
+
+/* Escape arrow functions syntax so they doesn't cause issues when parsing. */
         .replace(/=>/g,"[!11]")
 
+        .replace(/>[^>]*</g,x=>resolveTextContent(x,methods))
+
 /* Find all instances of tags (anything between < and >: */
-/* <> */
-/* </> */
-/* <span> */
-/* </span> */
-/* <span /> */
-/* <Span /> */
-/* ). */
         .replace(/<[^<]*>/g,x=>{
 
-/* Handle fragments and closing tags. */
+    /* Handle fragments and closing tags. */
             if (x === "<>") {
                 return `",["`;
             }
@@ -156,29 +48,26 @@ export const resolveJSX = str => {
                 return `"]),"`;
             }
 
-/* Find the tag name by splitting for spaces and using the first item in the resulting Array. */
-            let tagName;
-            x.substring(1,x.length-1).split(" ").forEach((y,j)=>{
-                if (j === 0) {
-                    tagName = y.substr(0,1).toLowerCase() !== y.substr(0,1) ? y : `"${y}"`;
-                    return;
-                }
-            });
+    /* Find the tag name by splitting for spaces and using the first item in the resulting Array. */
+    /* If the first letter is capital then assume this is a Component. */
+            let tagName = x.substring(1,x.length-1).split(" ")[0];
+            tagName = tagName.charAt(0).toLowerCase() !== tagName.charAt(0) ? tagName : `"${tagName}"`;
 
             const attributes = buildAttributes(x,methods);
 
-/* Create the end of the string literal. Check if the tag is self closing. */
-            const end = x.substr(x.length-2,1) === "/" ? `),"` : `,["`;
+    /* Create the end of the string literal. Check if the tag is self closing. */
+            const end = x.charAt(x.length-2) === "/" ? `),"` : `,["`;
             let output = `",dillx.template(${tagName},[${attributes}]${end}`;
 
-/* Room for console logging debugging. */
+    /* Room for console logging debugging. */
 
             return output;
         }) + `"`;
 
 /* A lot of pointless strings can be added into the Arrays here. These two replacers try to clean things up a bit. */
-        output = output.replace(/"s*",/g,"");
-        output = output.replace(/,"s*"/g,"");
+    output = output.replace(/"\s*",/g,"")
+        .replace(/,"\s*"/g,"")
+        .replace(/"\s+"/g,"");
 
     delete methods._index;
 
