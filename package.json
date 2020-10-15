@@ -1,6 +1,6 @@
 {
 	"name": "rollup-plugin-dillx",
-	"version": "2.0.0",
+	"version": "3.0.0",
 	"description": "",
 	"main": "./dist/rollup-plugin-dillx.js",
 	"scripts": {
@@ -12,6 +12,6 @@
 	"devDependencies": {
 		"@rollup/plugin-node-resolve": "^7.1.1",
 		"rollup": "^2.3.2",
-		"sage": "file:../../Sage"
+		"sage-library": "^1.1.1"
 	}
 }
